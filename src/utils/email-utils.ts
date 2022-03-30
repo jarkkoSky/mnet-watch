@@ -26,27 +26,25 @@ export const initEmail = (): EmailClient => {
 
 const adToHTML = (ad: Ad) => {
   return `
-    <br />
         <p>${ad.header}</p>
         <p>${ad.link}</p>
         <p>${ad.description}</p>
-    <br />
+        <p>${ad.price} €</p>
+        <p>${ad.city} - ${ad.province}</p>
     `;
 };
 
-export const sendEmail = (client: EmailClient, receiver: string, ads: Ad[]) => {
+export const sendEmail = (client: EmailClient, receiver: string, ad: Ad) => {
   client.transporter.sendMail(
     {
       from: client.user,
       to: receiver,
-      subject: 'Joku myy tavaraa mitä halutaan',
-      html: R.map(adToHTML, ads),
+      subject: ad.header,
+      html: adToHTML(ad),
     },
     (err: any, info: any) => {
       if (err) {
         console.log(err);
-      } else {
-        console.log(info);
       }
     }
   );

@@ -38,6 +38,48 @@ const getPrice = (table: Element) =>
       pipe(element.next, R.prop('data'), R.replace('€', ''), parseInt)
   );
 
+const getCategory = (table: Element): AD_CATEGORIES =>
+  pipe(
+    table,
+    R.prop('childNodes'),
+    getElementsByTagName('a'),
+    R.find((x) => R.includes('?category=', x.attribs.href)),
+    (element: Element) => {
+      const categoryId = pipe(
+        R.match(/category=([^&#]*)/, element.attribs.href)[1],
+        parseInt
+      );
+      return categoryId;
+    }
+  );
+
+const getLocation = (table: Element) =>
+  pipe(
+    table,
+    R.prop('childNodes'),
+    getElementsByTagName('b'),
+    R.find(R.path(['prev', 'prev', 'data'])),
+    (element) => {
+      if (!R.path<string>(['prev', 'prev', 'data'], element)) {
+        return {
+          province: '',
+          city: '',
+        };
+      }
+      const location = R.trim(
+        R.path<string>(['prev', 'prev', 'data'], element)
+      );
+
+      const province = R.match(/\(([^\)]+)\)/, location)[1];
+      const city = R.match(/^([\w\-]+)/, location)[1];
+
+      return {
+        province,
+        city,
+      };
+    }
+  );
+
 const getHeaderAndLink = (table: Element) =>
   pipe(
     table,
@@ -48,7 +90,7 @@ const getHeaderAndLink = (table: Element) =>
       const header = x[0].children[0] as any;
 
       return {
-        link: `https://muusikoiden.net/tori${x[0].attribs.href}`,
+        link: `https://muusikoiden.net${x[0].attribs.href}`,
         header: R.prop('data', header),
       };
     }
@@ -79,6 +121,8 @@ export const fetchAdsByCategory = (
                 description: getDescription(table),
                 ...getHeaderAndLink(table),
                 price: getPrice(table),
+                category: getCategory(table),
+                ...getLocation(table),
               };
             })
           )
