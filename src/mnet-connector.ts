@@ -28,6 +28,16 @@ const getDescription = (table: Element) =>
     R.join(' ')
   );
 
+const getPrice = (table: Element) =>
+  pipe(
+    table,
+    R.prop('childNodes'),
+    getElementsByTagName('b'),
+    R.find((elem) => R.contains('€', (elem.next as any).data)),
+    (element: any) =>
+      pipe(element.next, R.prop('data'), R.replace('€', ''), parseInt)
+  );
+
 const getHeaderAndLink = (table: Element) =>
   pipe(
     table,
@@ -53,9 +63,12 @@ export const fetchAdsByCategory = (
     pollInterval$,
     switchMap(() =>
       pipe(
-        fetch(`${BASE_URL}?category=${category}`, {}),
+        fetch(`${BASE_URL}?category=${category}&type=sell`),
         from,
-        switchMap((response) => response.text()),
+        switchMap((response) => response.arrayBuffer()),
+        map((buffer: BufferSource) =>
+          new TextDecoder('iso-8859-1').decode(buffer)
+        ),
         map((html: string) =>
           pipe(
             parseStringToHtml(html),
@@ -65,6 +78,7 @@ export const fetchAdsByCategory = (
               return {
                 description: getDescription(table),
                 ...getHeaderAndLink(table),
+                price: getPrice(table),
               };
             })
           )
