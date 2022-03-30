@@ -10,10 +10,12 @@ import {
   getElementsByTagType,
   parseStringToHtml,
 } from './utils/html-utils';
+import { from, interval, map, Observable, startWith, switchMap } from 'rxjs';
 
 const BASE_URL = 'https://muusikoiden.net/tori/';
+const POLL_INTERVAL = 60 * 1000;
 
-const isAd = (node: Node) => node.childNodes.length == 6;
+const isAd = (element: Element) => element.childNodes.length == 6;
 
 const getDescription = (table: Element) =>
   pipe(
@@ -21,7 +23,7 @@ const getDescription = (table: Element) =>
     R.prop('childNodes'),
     findElement((elem) => (elem.attribs.class == 'msg' ? true : false)),
     getElementsByTagType(ElementType.Text),
-    R.map(R.prop('data')),
+    R.map((x: any) => R.prop('data', x)),
     R.flatten,
     R.join(' ')
   );
@@ -33,7 +35,7 @@ const getHeaderAndLink = (table: Element) =>
     findElement((elem) => (elem.attribs.class == 'tori_title' ? true : false)),
     getElementsByTagName('a'),
     (x) => {
-      const header = x[0].children[0];
+      const header = x[0].children[0] as any;
 
       return {
         link: `https://muusikoiden.net/tori${x[0].attribs.href}`,
@@ -42,21 +44,32 @@ const getHeaderAndLink = (table: Element) =>
     }
   );
 
-export const fetchAdsByCategory = async (
+export const fetchAdsByCategory = (
   category: AD_CATEGORIES
-): Promise<Ad[]> => {
-  const response = await fetch(`${BASE_URL}?category=${category}`, {});
-  const html = await response.text();
+): Observable<Ad[]> => {
+  const pollInterval$ = pipe(interval(POLL_INTERVAL), startWith(undefined));
 
   return pipe(
-    parseStringToHtml(html),
-    getElementsByTagName('table'),
-    R.filter(isAd),
-    R.map((table) => {
-      return {
-        description: getDescription(table),
-        ...getHeaderAndLink(table),
-      };
-    })
+    pollInterval$,
+    switchMap(() =>
+      pipe(
+        fetch(`${BASE_URL}?category=${category}`, {}),
+        from,
+        switchMap((response) => response.text()),
+        map((html: string) =>
+          pipe(
+            parseStringToHtml(html),
+            getElementsByTagName('table'),
+            R.filter(isAd),
+            R.map((table) => {
+              return {
+                description: getDescription(table),
+                ...getHeaderAndLink(table),
+              };
+            })
+          )
+        )
+      )
+    )
   );
 };

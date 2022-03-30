@@ -1,3 +1,4 @@
 .env
 profiles.ts
 node_modules
+dist

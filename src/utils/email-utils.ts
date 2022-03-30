@@ -42,7 +42,7 @@ export const sendEmail = (client: EmailClient, receiver: string, ads: Ad[]) => {
       subject: 'Joku myy tavaraa mitä halutaan',
       html: R.map(adToHTML, ads),
     },
-    (err, info) => {
+    (err: any, info: any) => {
       if (err) {
         console.log(err);
       } else {

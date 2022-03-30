@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "lib": ["es2019"],
+    "module": "esnext",
+    "target": "es2019",
+
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "noImplicitAny": true,
+    "moduleResolution": "node",
+    "sourceMap": false,
+    "outDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "*": ["node_modules/*"]
+    }
+  },
+  "include": ["src/**/*"]
+}
